@@ -1,0 +1,57 @@
+name: Sync official upstream
+
+on:
+  schedule:
+    - cron: "37 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout product repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch official upstream
+        run: |
+          set -euo pipefail
+          git remote add upstream https://github.com/openai/codex.git 2>/dev/null || \
+            git remote set-url upstream https://github.com/openai/codex.git
+          git fetch --no-tags upstream main
+
+      - name: Merge upstream into sync branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch --detach origin/main
+          git switch -C sync/upstream-main
+          git merge --no-commit --no-ff upstream/main \
+            -m "sync(codex): merge official upstream main"
+
+      - name: Create or update synchronization PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: sync/upstream-main
+          base: main
+          delete-branch: false
+          title: "sync(codex): merge official upstream main"
+          commit-message: "sync(codex): merge official upstream main"
+          body: |
+            Automated synchronization from `openai/codex` `main`.
+
+            This PR must pass the existing Codex PR checks before merging. Review
+            all conflicts, protocol changes, and intentional product divergences.
+          labels: |
+            upstream-sync
