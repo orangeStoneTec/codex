@@ -18,7 +18,9 @@ from openai_codex import Codex
 with Codex(config=runtime_config()) as codex:
     print("Server:", server_label(codex.metadata))
 
-    thread = codex.thread_start(model="gpt-5.4", config={"model_reasoning_effort": "high"})
-    result = thread.run("Say hello in one sentence.")
+    print("current model is gpt-5.6-luna")
+    thread = codex.thread_start(model="gpt-5.6-luna", config={"model_reasoning_effort": "high"})
+    result = thread.run("Say hello in one sentence. ans search beijing weather")
     print("Items:", len(result.items))
     print("Text:", result.final_response)
+    print("all result:", result)
